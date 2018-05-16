@@ -1,0 +1,65 @@
+---
+title: "Assignment - Week 1"
+author: "Udit Ennam"
+date: "May 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question
+
+Install the package "babynames"
+    
+```{r}
+install.packages("babynames")
+```
+
+Loading required packages
+
+```{r}
+library(babynames)
+library(ggplot2)
+library(tidyverse)
+```
+
+Plot the number of male and female babies named Taylor by year
+
+```{r}
+colnames(babynames) <- c("Year", "Sex", "Name", "Count", "Proportion")
+ggplot(filter(babynames, Name == "Taylor"), aes(Year, Count)) + geom_line(aes(color = Sex), lwd = 1) + ggtitle ("Number of Male-Female babies named Taylor") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Answer the following questions, showing plots to substantiate your answers: 
+
+* Is a 16 year old named Quinn more likely to be a boy or a girl?
+
+```{r}
+ggplot(filter(babynames, Name == "Quinn" & Year == 1999), aes(Sex, Count)) + geom_col(aes(fill = Sex)) + theme_bw() + ggtitle("16-year old Quinn") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Assuming the **current year** is **2015**, a 16 year old Quinn would have been born in 1999, so we plot the male-female distribution for that year and find out that a **16 year-old Quinn** will most likely be a <span style = "color : #33cccc">**boy**</span>.
+
+*  Is a 2 year old named Quinn more likely to be a boy or a girl?
+
+```{r}
+ggplot(filter(babynames, Name == "Quinn" & Year == 2013), aes(Sex, Count)) + geom_col(aes(fill = Sex)) + theme_bw() + ggtitle("2-year old Quinn") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+Assuming the **current year** to be **2015**, a **2 year old Quinn** would have been born in 2013 and most likely be a <span style = "color : #ff6666">**girl**</span> as seen from the plot.
+
+What is your best guess as to how old a woman named Susan is?
+
+```{r}
+ggplot(filter(babynames, Name == "Susan"), aes(Year, Count)) + geom_line(aes(color = Sex))
+```
+
+We see that most number of babies named Susan were born between about 1945 and 1970 through the plot. So, we zoom in on this interval to find out the year where maximum number of babies with name Susan were born.
+
+```{r}
+ggplot(filter(babynames, Name == "Susan"), aes(Year, Count)) + geom_col() + geom_text(aes(label = Year, angle = 90), color = "#8db3ef", hjust = 0, vjust = 0, size = 3) + xlim(1950, 1970) + theme_bw() + ggtitle("Susan's Age Viz") + theme_classic() + theme(plot.title = element_text(hjust = 0.5))
+```
+
+**1955** was the year when **maximum number of babies named Susan were born** and the dataset has data until 2015, so **2015 - 1955 = 60**, thus **60 years** would be my **best guess** for the age of a woman named Susan.
