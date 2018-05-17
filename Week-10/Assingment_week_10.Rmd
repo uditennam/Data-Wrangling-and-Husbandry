@@ -1,0 +1,194 @@
+---
+title: "Stats597 - Week 10"
+author: "Udit Ennam"
+date: "May 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question
+
+Please write a Shiny app with the following features:
+
+* a choice of which state to plot
+* a choice of plotting either median household income (B19013_001), median gross rent (B25064_001), or the ratio of median gross rent to median household income
+
+* a plot of the chosen variable in the chosen state.
+
+You can make the plot using choroplethr, ggplot with geom_sf, or leaflet (if you want to try leaflet take a look at https://rstudio.github.io/leaflet/shiny.html). You can plot county or census tract data; if you use choroplethr I suggest sticking to county-level.
+
+```{r}
+library(shiny)
+library(tidyverse)
+library(tidycensus)
+library(ggplot2)
+# Disabling Scientific notation
+options(scipen=999)
+
+ui <- fluidPage(sidebarLayout(
+  sidebarPanel(
+    selectInput(
+      inputId = "state",
+      label = "Choose State",
+      choices = c(
+        'Alaska',
+        'Alabama',
+        'Arkansas',
+        'Arizona',
+        'California',
+        'Colorado',
+        'Connecticut',
+        'District of Columbia',
+        'Delaware',
+        'Florida',
+        'Georgia',
+        'Hawaii',
+        'Iowa',
+        'Idaho',
+        'Illinois',
+        'Indiana',
+        'Kansas',
+        'Kentucky',
+        'Louisiana',
+        'Massachusetts',
+        'Maryland',
+        'Maine',
+        'Michigan',
+        'Minnesota',
+        'Missouri',
+        'Mississippi',
+        'Montana',
+        'North Carolina',
+        'North Dakota',
+        'Nebraska',
+        'New Hampshire',
+        'New Jersey',
+        'New Mexico',
+        'Nevada',
+        'New York',
+        'Ohio',
+        'Oklahoma',
+        'Oregon',
+        'Pennsylvania',
+        'Rhode Island',
+        'South Carolina',
+        'South Dakota',
+        'Tennessee',
+        'Texas',
+        'Utah',
+        'Virginia',
+        'Vermont',
+        'Washington',
+        'Wisconsin',
+        'West Virginia',
+        'Wyoming'
+      ),
+      selected = "New Jersey"
+    ),
+    # Default value is 'Median Household Income'
+    radioButtons(
+      inputId = "plotType",
+      label = "Plot",
+      choices = c(
+        "Median Household Income",
+        "Median Gross Rent",
+        "Ratio of Median Gross Rent to Median Household Income"
+      ),
+      selected = "Median Household Income"
+    )
+  ),
+  
+  mainPanel(plotOutput("main_plot"),
+            tableOutput("results"))
+),
+titlePanel(" "))
+server <- function(input, output, session) {
+  output$main_plot <- renderPlot({
+    state <- input$state
+    plot_type <- input$plotType
+    if (plot_type == "Median Household Income") {
+      df_median_income <-
+        get_acs(
+          geography = "county",
+          variables = c(median_income = "B19013_001"),
+          state = state,
+          geometry = TRUE
+        )
+      df_median_income %>%
+        ggplot(aes(fill = estimate, color = estimate)) +
+        geom_sf() + scale_fill_gradient(low = "#fff7f7", high = "#7f0000") + scale_color_gradient(low = "#fff7f7", high = "#7f0000") +
+        ggtitle("Median Household Income") + guides(
+          fill = guide_legend(title = "Median Household Income"),
+          colour = guide_legend(title = "Median Household Income")
+        ) + theme_light() + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + theme(plot.title = element_text(hjust = 0.5))
+    }
+    else if (plot_type == "Median Gross Rent") {
+      df_median_rent <-
+        get_acs(
+          geography = "county",
+          variables = c(median_rent = "B25064_001"),
+          state = state,
+          geometry = TRUE
+        )
+      df_median_rent %>%
+        ggplot(aes(fill = estimate, color = estimate)) +
+        geom_sf() + 
+        scale_fill_gradient(low = "#f2fff6", high = "#004414") + scale_color_gradient(low = "#f2fff6", high = "#004414") + 
+        ggtitle("Median Gross Rent") + guides(
+          fill = guide_legend(title = "Median Gross Rent"),
+          colour = guide_legend(title = "Median Gross Rent")
+        ) + theme_light() + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + theme(plot.title = element_text(hjust = 0.5))
+    }
+    else{
+      df_median_income <-
+        get_acs(
+          geography = "county",
+          variables = c(median_income = "B19013_001"),
+          state = state,
+          geometry = TRUE
+        )
+      df_median_rent <-
+        get_acs(
+          geography = "county",
+          variables = c(median_rent = "B25064_001"),
+          state = state,
+          geometry = TRUE
+        )
+      colnames(df_median_income)[4] <- "Income"
+      colnames(df_median_rent)[4] <- "Rent"
+      df <-
+        inner_join(as.data.frame(df_median_income),
+                   as.data.frame(df_median_rent),
+                   by = "GEOID")
+      df %>% mutate(Ratio = Rent / Income) -> df_ratio
+      df_median_income$Ratio <- df_ratio$Ratio
+      df_median_income %>% ggplot(aes(fill = Ratio, color = Ratio)) +
+        geom_sf() + scale_fill_gradient(low = "#f0edf7", high = "#140044") + scale_color_gradient(low = "#f0edf7", high = "#140044") +
+        ggtitle("Ratio of Median Gross Rent to Median Household Income")  + guides(
+          fill = guide_legend(title = "Ratio of Median Gross Rent to Median Household Income"),
+          colour = guide_legend(title = "Ratio of Median Gross Rent to Median Household Income")
+        ) + theme_light() + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + theme(plot.title = element_text(hjust = 0.5))
+    }
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
